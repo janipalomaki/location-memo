@@ -1,14 +1,13 @@
 // React Native stack navigator
 import 'react-native-gesture-handler';
 import * as React from 'react';
-import { View, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 
 // Omat komponentit
-import Aloitus from "./src/components/Aloitus";
-import Sijainti from "./src/components/Sijainti";
-
+import Aloitusnakyma from "./src/components/Aloitusnakyma";
+import SijainninTiedot from "./src/components/SijainninTiedot";
+import LisaaSijainti from "./src/components/LisaaSijainti";
 
 const Stack = createStackNavigator();
 
@@ -17,8 +16,9 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Aloitus">
-        <Stack.Screen name="Aloitus" component={Aloitus} />
-        <Stack.Screen name="Sijainti" component={Sijainti} />
+        <Stack.Screen name="Aloitusnäkymä" component={Aloitusnakyma} />
+        <Stack.Screen name="Sijainnin tiedot" component={SijainninTiedot} />
+        <Stack.Screen name="Lisää sijainti" component={LisaaSijainti} />
       </Stack.Navigator>
     </NavigationContainer>
   );
