@@ -1,10 +1,10 @@
 import React from 'react';
 import { useEffect, useState } from 'react/cjs/react.development';
 
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Button } from 'react-native';
 
 // React Native Paper
-import { Provider as PaperProvider, Text, FAB, List, TextInput } from 'react-native-paper';
+import { Provider as PaperProvider, Text, FAB, List, TextInput, Portal, Dialog } from 'react-native-paper';
 
 // Expo Location - sijaintitiedot puhelimesta
 import * as Location from 'expo-location';
@@ -16,10 +16,10 @@ const db = SQLite.openDatabase("sijaintitietokanta.db"); // Luodaan tietokantayh
 // Luodaan tietokanta
 db.transaction(
   (tx) => {
-      tx.executeSql(`CREATE TABLE IF NOT EXISTS sijainnit(
+      tx.executeSql(`CREATE TABLE IF NOT EXISTS OMATSIJAINNIT(
                       id INTEGER PRIMARY KEY AUTOINCREMENT,
                       sijainti TEXT
-      )`);
+                    )`);
 
   }, 
   (err) => {
@@ -29,21 +29,42 @@ db.transaction(
 
 export default function Aloitusnakyma( { navigation } ) {
 
-    const [location, setLocation] = useState(null);
-    const [errorMsg, setErrorMsg] = useState(null);
+  const [location, setLocation] = useState(null);
+  const [errorMsg, setErrorMsg] = useState(null);
 
-    const [tunnisteTeksti, setTunnisteTeksti] = useState("");
-    const [sijaintiTiedot, setSijaintiTiedot] = useState({})
-
+  // Tietokantaan tallennetut sijainnit tilamuuttujassa
   const [sijainnit, setSijainnit] = useState([]);
 
+  // Dialogi
+  const [uusiSijaintiDialogi, setUusiSijaintiDialogi] = useState({
+                                                        nayta : false,
+                                                        uusiSijainti : []
+                                                        })
+
 // TIETOKANNAN HALLINTA
+
+  // Tyhjennetään tietokannan taulu
+  const tyhjennaTiedot = () => {
+    db.transaction(
+      (tx) => {
+        tx.executeSql(`DELETE FROM OMATSIJAINNIT`, [], 
+          (_tx, rs) => {
+            haeSijainnit();
+          }
+        )
+      }, 
+      (err) => {
+        console,log(err);
+      });
+  }
+
   // Haetaan sijainnit tietokannasta
   const haeSijainnit = () => {
     db.transaction(
       (tx) => {
-        tx.executeSql(`SELECT * FROM sijainnit`, [], 
+        tx.executeSql(`SELECT * FROM OMATSIJAINNIT`, [], 
           (_tx, rs) => {
+
             setSijainnit(rs.rows._array);
           }
         )
@@ -54,24 +75,31 @@ export default function Aloitusnakyma( { navigation } ) {
   }
 
   // Lisätään sijainti tietokantaan
-  const lisaa = () => {
+  const lisaaSijainti = () => {
+
+    // Suljetaan ja tyhjennetään dialogi
+    setUusiSijaintiDialogi({ nayta : false, uusiSijainti : ""});
+
     db.transaction(
         (tx) => {
-            tx.executeSql(`INSERT INTO sijainnit (sijainti) VALUES (?)`, [], 
+            let tallenneJson = uusiSijaintiDialogi.uusiSijainti;
+            let tallenneString = JSON.stringify(tallenneJson);
+            console.log(tallenneString);
+            tx.executeSql(`INSERT INTO OMATSIJAINNIT (sijainti) VALUES (?)`, [tallenneString], 
             (_tx, rs) => {
-                setSijainnit(rs.rows._array);
+                haeSijainnit();
             }
             )
         }, 
         (err) => {
-            console,log(err);
+            console.log(err);
         });
 
   }
 
   // SIJAINTITIEDOT
   useEffect(() => {
-    haeSijainnit(); // Haetaan tallennetut sijainnit
+    haeSijainnit(); // Haetaan tallennetut sijainnit kun sovellus käynnistyy
 
     // Pyydetään lupaa käyttää laitteen sijaintitietoja
     (async () => {
@@ -93,17 +121,28 @@ export default function Aloitusnakyma( { navigation } ) {
     if (errorMsg) {
     text = errorMsg;
     } else if (location) {
-    text = JSON.stringify(location);
+    text = "";
     }
-
+    
     return (
-      <PaperProvider>
+    <PaperProvider>
       
-      <Text>{text}</Text>
-     
-     <List.Item
-      title="1 Item"
-      description="Item description"
+    <Text>{text}</Text>
+
+    {(sijainnit.length > 0)
+
+
+    ? sijainnit.map((sijainti, idx) => {
+
+      let sijaintiObj = JSON.parse(sijainti.sijainti);
+      let d = new Date(sijaintiObj.aikaleima);
+      let paivamaara = d.toString();
+
+      return(
+      <List.Item
+      key={sijainti.id}
+      title={sijaintiObj.teksti}
+      description={paivamaara}
       left={props => <List.Icon {...props} icon="map-marker" />}
       right={props =>
             <FAB 
@@ -112,50 +151,66 @@ export default function Aloitusnakyma( { navigation } ) {
             onPress={ () => navigation.navigate("Sijainnin tiedot")}
             />
             }
-      />
+            />
+      )
 
+    })
+    : <Text>Ei tallennettuja sijainteja</Text>
+    }
+     
       <FAB 
       style={styles.nappiLisaa}
       icon="map-marker-plus"
+      onPress={() => {
+        setUusiSijaintiDialogi({
+          nayta : true,
+          uusiSijainti : ""
+        })
+      }}
+      />
+       <FAB 
+      style={styles.nappiPoista}
+      icon="delete-forever"
+      onPress={tyhjennaTiedot}
       />
 
-      </PaperProvider>
+      <Portal>
+        <Dialog visible={uusiSijaintiDialogi.nayta} onDismiss={() => { 
+          setUusiSijaintiDialogi({ 
+          nayta : false, 
+          uusiSijainti : ""
+          })}}>
+          <Dialog.Title>Tallenna sijainnin tiedot:</Dialog.Title>
+          <Dialog.Content>
 
-      // DIALOGI
-      // Lisää sijainti dialogi tähän! ks. video 4
-      /*
-            
-              if (location != null){
-                  return (
-                      
-                      <View>
-                          <Text>{text}</Text>
-
-                          <TextInput
-                          label="Tunniste"
-                          placeholder="Kirjoita sijainnille tunnisteteksti..."
-                          value={tunnisteTeksti}
-                          onChangeText={tunnisteTeksti => setTunnisteTeksti(tunnisteTeksti)}
-                          />
-                          <FAB
-                          icon="map-marker-plus"
-                          label="Lisää sijainti"
-                          onPress={lisaa}
-                          />
-                      </View>
-                    
-                  )
-              } else {
-                  return (
-                    
-                          <Text>{text}</Text>
-                  
-                  )
-              }
+          <TextInput
+            label="Tunnisteteksti"
+            mode="outlined"
+            placeholder="Kirjoita sijainnille tunnisteteksti..."
+            onChangeText={ (teksti) => { setUusiSijaintiDialogi( {
+            ...uusiSijaintiDialogi, 
+            uusiSijainti : {
+                lat : location.coords.latitude,
+                lon : location.coords.longitude,
+                aikaleima : location.timestamp,
+                teksti: teksti
             }
-      */
+          })}}
+            />
 
+          </Dialog.Content>
 
+          <Dialog.Actions>
+            <FAB 
+            label="Lisää sijainti"
+            mode="contained"
+            onPress={lisaaSijainti}
+            />
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+
+    </PaperProvider>
     )
   }
 
@@ -171,6 +226,12 @@ export default function Aloitusnakyma( { navigation } ) {
       margin: 20,
       bottom: 15,
       left: 15,
+    },
+    nappiPoista: {
+      position : "absolute",
+      margin: 20,
+      bottom: 15,
+      left: 75,
     }
-   
+  
   });
