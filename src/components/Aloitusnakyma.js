@@ -231,7 +231,7 @@ export default function Aloitusnakyma( { navigation } ) {
       position : "absolute",
       margin: 20,
       bottom: 15,
-      left: 75,
+      right: 15,
     }
   
   });
