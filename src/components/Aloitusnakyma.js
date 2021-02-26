@@ -140,15 +140,15 @@ export default function Aloitusnakyma( { navigation } ) {
 
       return(
       <List.Item
+      onPress={ () => navigation.navigate("Sijainnin tiedot")}
       key={sijainti.id}
       title={sijaintiObj.teksti}
       description={paivamaara}
       left={props => <List.Icon {...props} icon="map-marker" />}
       right={props =>
-            <FAB 
+            <List.Icon
             {...props} 
-            icon="pencil-outline" 
-            onPress={ () => navigation.navigate("Sijainnin tiedot")}
+            icon="plus-box" 
             />
             }
             />
