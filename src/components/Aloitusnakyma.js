@@ -149,12 +149,11 @@ export default function Aloitusnakyma( { navigation } ) {
     {(sijainnit.length > 0)
     ? sijainnit.map((sijainti, idx) => {
 
-      //console.log(sijainti);
+      console.log(sijainti);
 
-      // Apumuuttujat
-      let id = JSON.parse(sijainti.id); // objekti
-      let tiedot = JSON.parse(sijainti.tiedot); // objekti
-      let kuva = JSON.parse(sijainti.kuva); // objekti
+      let id = JSON.parse(sijainti.id);
+      let tiedot = JSON.parse(sijainti.tiedot);
+      let kuva = sijainti.kuva;
 
       let d = new Date(tiedot.aikaleima);
       let paivamaara = d.toString();
@@ -180,8 +179,8 @@ export default function Aloitusnakyma( { navigation } ) {
             }
             />
       )
-
     })
+  
     : <Text>Ei tallennettuja sijainteja</Text>
     }
      

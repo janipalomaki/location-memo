@@ -49,11 +49,12 @@ export default function SijainninTiedot ( {route, navigation } ) {
     db.transaction(
         (tx) => {
             // Muutetaan data tallennettavaan muotoon ennen tallentamista (string)
-            let tallenneJson = uusiKuvaDialogi.kuvanTiedot.uri;
-            let tallenneString = JSON.stringify(tallenneJson);
-            tx.executeSql(`UPDATE OMATSIJAINNIT SET (sijainti) VALUES (?)`, [tallenneString], 
+            let uri = uusiKuvaDialogi.kuvanTiedot.uri;
+            let uriString = JSON.stringify(uri);
+           
+            tx.executeSql(`UPDATE TALLENNETUTSIJAINNIT SET kuva = ${uriString} WHERE id = ${id}`, 
             (_tx, rs) => {
-                haeSijainnit();
+                console.log(_tx);
             }
             )
         }, 
@@ -89,6 +90,7 @@ export default function SijainninTiedot ( {route, navigation } ) {
       const kuvanTiedot = await kameranRef.takePictureAsync();
 
       setKuvanTiedot(kuvanTiedot);
+      setKuvat(kuvanTiedot.uri);
       setKuvaustila(false);
       setUusiKuvaDialogi({ nayta : true, kuvanTiedot : kuvanTiedot });
     }
@@ -127,7 +129,7 @@ export default function SijainninTiedot ( {route, navigation } ) {
       :<PaperProvider>
           <Text>{JSON.stringify(id)}</Text>
           <Text>{JSON.stringify(tiedot)}</Text>
-          <Text>{JSON.stringify(kuvat)}</Text>
+          <Text>{JSON.stringify(kuvatiedostot)}</Text>
 
           <FAB
           icon="camera-plus"
@@ -170,22 +172,17 @@ export default function SijainninTiedot ( {route, navigation } ) {
     
         <Portal>
           <Dialog visible={uusiKuvaDialogi.nayta} onDismiss={() => { setUusiKuvaDialogi({ nayta : false, kuvanUri : kuvanTiedot.uri })}}>
-            <Dialog.Title>Tallenna kuvan tiedot:</Dialog.Title>
+            <Dialog.Title>Kuva on valmis </Dialog.Title>
             <Dialog.Content>
-              <TextInput
-                label="Anna kuvan nimi..."
-                mode="outlined"
-                placeholder="Kuva..."
-                onChangeText={ (teksti) => { setUusiKuvaDialogi( {...uusiKuvaDialogi, teksti: teksti} ) } }
-                />
+             
             </Dialog.Content>
             <Dialog.Actions>
               <Button 
               mode="contained"
               onPress={() => {
-                lisaaKuva();
+                muokkaaSijainninTiedot();
               }}
-              >Tallenna</Button>
+              >Ok</Button>
             </Dialog.Actions>
           </Dialog>
         </Portal>
