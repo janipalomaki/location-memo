@@ -19,8 +19,8 @@ export default function SijainninTiedot ( {route, navigation } ) {
   const [kuvaustilaInfo, setKuvaustilaInfo] = useState("");
   const [virhe, setVirhe] = useState(null);
   const [kameranRef, setKameranRef] = useState(null);
-  const [kuvanTiedot, setKuvanTiedot] = useState(null);
-  const [kuvat, setKuvat] = useState([]);
+
+  const [kuvat, setKuvat] = useState([]); // Ei käytössä
 
   const edellinen = () => {
     if (idx != 0) {
@@ -36,23 +36,17 @@ export default function SijainninTiedot ( {route, navigation } ) {
     }
   }
 
-  // Dialogi ikkuna
-  const [uusiKuvaDialogi, setUusiKuvaDialogi] = useState({
-    nayta : false,
-    kuvanTiedot : []
-});
-
+  
   // TIETOKANNAN HALLINTA - muokataan sijaintitietoa tietokannassa
-  const muokkaaSijainninTiedot = () => {
-    setUusiKuvaDialogi({ nayta : false, kuvanTiedot : "" });
+  const muokkaaSijainninTiedot = (kuvanTiedot) => {
 
     db.transaction(
         (tx) => {
-            // Muutetaan data tallennettavaan muotoon ennen tallentamista (string)
-            let uri = uusiKuvaDialogi.kuvanTiedot.uri;
-            let uriString = JSON.stringify(uri);
+            // Muutetaan data stringiksi ennen tallentamista
+            let tallenneJson = kuvanTiedot.uri;
+            let tallenneString = JSON.stringify(tallenneJson);
            
-            tx.executeSql(`UPDATE TALLENNETUTSIJAINNIT SET kuva = ${uriString} WHERE id = ${id}`, 
+            tx.executeSql(`UPDATE TALLENNETUTSIJAINNIT SET kuva = ${tallenneString} WHERE id = ${id}`, 
             (_tx, rs) => {
                 console.log(_tx);
             }
@@ -88,14 +82,12 @@ export default function SijainninTiedot ( {route, navigation } ) {
     if (kameranRef) {
 
       const kuvanTiedot = await kameranRef.takePictureAsync();
-
-      setKuvanTiedot(kuvanTiedot);
-      setKuvat(kuvanTiedot.uri);
-      setKuvaustila(false);
-      setUusiKuvaDialogi({ nayta : true, kuvanTiedot : kuvanTiedot });
+      setKuvaustila(false);   
+      muokkaaSijainninTiedot(kuvanTiedot); 
     }
-
   }
+
+
 
     return (
 
@@ -133,6 +125,7 @@ export default function SijainninTiedot ( {route, navigation } ) {
 
           <FAB
           icon="camera-plus"
+          label="Ota kuva sijainnista"
           style={styles.iconCamera}
           onPress={kaynnistaKamera}
           />
@@ -168,24 +161,6 @@ export default function SijainninTiedot ( {route, navigation } ) {
       // Jos kuvaa ei ole määritelty niin null
       : null
       }
-
-    
-        <Portal>
-          <Dialog visible={uusiKuvaDialogi.nayta} onDismiss={() => { setUusiKuvaDialogi({ nayta : false, kuvanUri : kuvanTiedot.uri })}}>
-            <Dialog.Title>Kuva on valmis </Dialog.Title>
-            <Dialog.Content>
-             
-            </Dialog.Content>
-            <Dialog.Actions>
-              <Button 
-              mode="contained"
-              onPress={() => {
-                muokkaaSijainninTiedot();
-              }}
-              >Ok</Button>
-            </Dialog.Actions>
-          </Dialog>
-        </Portal>
 
       </PaperProvider>
     )
