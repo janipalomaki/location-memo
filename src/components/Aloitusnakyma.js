@@ -1,7 +1,7 @@
 import React from 'react';
 import { useEffect, useState } from 'react/cjs/react.development';
 
-import { View, StyleSheet, Button } from 'react-native';
+import { StyleSheet, Alert } from 'react-native';
 
 // React Native Paper
 import { Provider as PaperProvider, Text, FAB, List, TextInput, Portal, Dialog } from 'react-native-paper';
@@ -82,9 +82,9 @@ export default function Aloitusnakyma( { navigation } ) {
 
     db.transaction(
         (tx) => {
+            // Muutetaan data tallennettavaan muotoon ennen tallentamista (string)
             let tallenneJson = uusiSijaintiDialogi.uusiSijainti;
             let tallenneString = JSON.stringify(tallenneJson);
-            console.log(tallenneString);
             tx.executeSql(`INSERT INTO OMATSIJAINNIT (sijainti) VALUES (?)`, [tallenneString], 
             (_tx, rs) => {
                 haeSijainnit();
@@ -96,6 +96,21 @@ export default function Aloitusnakyma( { navigation } ) {
         });
 
   }
+
+  // Tyhjennä muisti dialogi
+  const createTwoButtonAlert = () =>
+    Alert.alert(
+      "Sijaintimuistion tyhjennys",
+      "Haluatko varmasti poistaa kaikki sijainnit?",
+      [
+        {
+          text: "Peruuta",
+          style: "cancel"
+        },
+        { text: "OK", onPress: () => tyhjennaTiedot() }
+      ],
+      { cancelable: false }
+    );
 
   // SIJAINTITIEDOT
   useEffect(() => {
@@ -138,9 +153,16 @@ export default function Aloitusnakyma( { navigation } ) {
       let d = new Date(sijaintiObj.aikaleima);
       let paivamaara = d.toString();
 
+      console.log(sijaintiObj);
+
       return(
       <List.Item
-      onPress={ () => navigation.navigate("Sijainnin tiedot")}
+      onPress={ () => navigation.navigate("Sijainnin tiedot", 
+      {
+        id : idx,
+        tiedot : sijaintiObj
+      }
+      )}
       key={sijainti.id}
       title={sijaintiObj.teksti}
       description={paivamaara}
@@ -171,7 +193,7 @@ export default function Aloitusnakyma( { navigation } ) {
        <FAB 
       style={styles.nappiPoista}
       icon="delete-forever"
-      onPress={tyhjennaTiedot}
+      onPress={createTwoButtonAlert}
       />
 
       <Portal>
@@ -193,7 +215,8 @@ export default function Aloitusnakyma( { navigation } ) {
                 lat : location.coords.latitude,
                 lon : location.coords.longitude,
                 aikaleima : location.timestamp,
-                teksti: teksti
+                teksti: teksti,
+                kuvat : []
             }
           })}}
             />
