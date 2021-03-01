@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { Camera } from "expo-camera";
+import { StyleSheet, Image } from 'react-native';
 
 // React Native Paper
-import { Provider as PaperProvider, Text } from 'react-native-paper';
+import { Provider as PaperProvider, Text, FAB, Card, Portal, Dialog, TextInput, Button } from 'react-native-paper';
 
 // SQLite tietokannan lukemista varten
 import * as SQLite from 'expo-sqlite';
@@ -11,7 +12,7 @@ const db = SQLite.openDatabase("sijaintitietokanta.db"); // Luodaan tietokantayh
 
 export default function SijainninTiedot ( {route, navigation } ) {
 
-  const { id, tiedot } = route.params; // Sijainnin tiedot aloitusnäkymästä (tiedot sijaintietokannasta)
+  const { id, tiedot, kuvatiedostot } = route.params; // Sijainnin tiedot aloitusnäkymästä (tiedot sijaintietokannasta)
 
   // Tilamuuttujat kuvaustoimintoa varten
   const [kuvaustila, setKuvaustila] = useState(false);
@@ -21,13 +22,34 @@ export default function SijainninTiedot ( {route, navigation } ) {
   const [kuvanTiedot, setKuvanTiedot] = useState(null);
   const [kuvat, setKuvat] = useState([]);
 
+  const edellinen = () => {
+    if (idx != 0) {
+      setIdx(idx - 1);
+    }
+  }
+
+  const seuraava = () => {
+    let ylaraja = Number(kuvat.length) - 1;
+
+    if (idx != ylaraja){
+      setIdx(idx + 1);
+    }
+  }
+
+  // Dialogi ikkuna
+  const [uusiKuvaDialogi, setUusiKuvaDialogi] = useState({
+    nayta : false,
+    kuvanTiedot : []
+});
+
   // TIETOKANNAN HALLINTA - muokataan sijaintitietoa tietokannassa
   const muokkaaSijainninTiedot = () => {
+    setUusiKuvaDialogi({ nayta : false, kuvanTiedot : "" });
 
     db.transaction(
         (tx) => {
             // Muutetaan data tallennettavaan muotoon ennen tallentamista (string)
-            let tallenneJson = uusiSijaintiDialogi.uusiSijainti; // TÄMÄ MUUTETTAVA!
+            let tallenneJson = uusiKuvaDialogi.kuvanTiedot.uri;
             let tallenneString = JSON.stringify(tallenneJson);
             tx.executeSql(`UPDATE OMATSIJAINNIT SET (sijainti) VALUES (?)`, [tallenneString], 
             (_tx, rs) => {
@@ -68,7 +90,7 @@ export default function SijainninTiedot ( {route, navigation } ) {
 
       setKuvanTiedot(kuvanTiedot);
       setKuvaustila(false);
-      setUusiKuvaDialogi({ nayta : true, teksti : "", kuvanTiedot : kuvanTiedot });
+      setUusiKuvaDialogi({ nayta : true, kuvanTiedot : kuvanTiedot });
     }
 
   }
@@ -105,6 +127,69 @@ export default function SijainninTiedot ( {route, navigation } ) {
       :<PaperProvider>
           <Text>{JSON.stringify(id)}</Text>
           <Text>{JSON.stringify(tiedot)}</Text>
+          <Text>{JSON.stringify(kuvat)}</Text>
+
+          <FAB
+          icon="camera-plus"
+          style={styles.iconCamera}
+          onPress={kaynnistaKamera}
+          />
+
+    
+      <Text>{virhe}</Text>
+
+      {(!kuvat) // Näytetään kuvat tässä (Jos kuvia löytyy tilamuuttujasta)
+      ?<Card style={styles.kortti}>
+        <Card.Content>
+        <Image
+          style={styles.kuva}
+          source={{ uri : kuvat[idx].kuvanUri }}
+        /> 
+        <Title>{kuvat[idx].teksti}</Title>
+        <Card.Actions style={styles.kortti}>
+              <FAB 
+              style={styles.navi}
+              mode="contained"
+              icon="chevron-left"
+              onPress={edellinen}
+              />
+              <FAB
+              style={styles.navi}
+              mode="contained"
+              icon="chevron-right"
+              onPress={seuraava}
+              />
+        </Card.Actions>
+        </Card.Content>
+      </Card>
+
+      // Jos kuvaa ei ole määritelty niin null
+      : null
+      }
+
+    
+        <Portal>
+          <Dialog visible={uusiKuvaDialogi.nayta} onDismiss={() => { setUusiKuvaDialogi({ nayta : false, kuvanUri : kuvanTiedot.uri })}}>
+            <Dialog.Title>Tallenna kuvan tiedot:</Dialog.Title>
+            <Dialog.Content>
+              <TextInput
+                label="Anna kuvan nimi..."
+                mode="outlined"
+                placeholder="Kuva..."
+                onChangeText={ (teksti) => { setUusiKuvaDialogi( {...uusiKuvaDialogi, teksti: teksti} ) } }
+                />
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button 
+              mode="contained"
+              onPress={() => {
+                lisaaKuva();
+              }}
+              >Tallenna</Button>
+            </Dialog.Actions>
+          </Dialog>
+        </Portal>
+
       </PaperProvider>
     )
   }
@@ -121,5 +206,49 @@ export default function SijainninTiedot ( {route, navigation } ) {
       marginTop : 50,
       margin : 20
     },
+    nappiSulje: {
+      position: 'absolute',
+      margin: 20,
+      bottom: 0,
+      right: 0
+    },
+    nappiOtaKuva: {
+      position: 'absolute',
+      margin: 20,
+      bottom: 0,
+      left: 0
+    },
+    kameranakyma : {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center', 
+    },
+    kuva : {
+      width: 300, 
+      height: 400, 
+      resizeMode: 'stretch',
+    },
+    iconDelete : {
+      marginLeft : 200,
+      marginBottom : 30,
+      padding : 2
+    },
+    iconCamera : {
+      marginLeft : 20,
+      marginBottom : 30,
+      padding : 2
+    },
+    appbar : {
+      marginTop: 50
+    },
+    kortti : {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center', 
+    },
+    navi : {
+      padding : 2,
+      margin : 25
+    }
    
   });

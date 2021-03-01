@@ -16,9 +16,10 @@ const db = SQLite.openDatabase("sijaintitietokanta.db"); // Luodaan tietokantayh
 // Luodaan tietokanta
 db.transaction(
   (tx) => {
-      tx.executeSql(`CREATE TABLE IF NOT EXISTS OMATSIJAINNIT(
+      tx.executeSql(`CREATE TABLE IF NOT EXISTS TALLENNETUTSIJAINNIT(
                       id INTEGER PRIMARY KEY AUTOINCREMENT,
-                      sijainti TEXT
+                      tiedot TEXT,
+                      kuva TEXT
                     )`);
 
   }, 
@@ -47,7 +48,7 @@ export default function Aloitusnakyma( { navigation } ) {
   const tyhjennaTiedot = () => {
     db.transaction(
       (tx) => {
-        tx.executeSql(`DELETE FROM OMATSIJAINNIT`, [], 
+        tx.executeSql(`DELETE FROM TALLENNETUTSIJAINNIT`, [], 
           (_tx, rs) => {
             haeSijainnit();
           }
@@ -62,7 +63,7 @@ export default function Aloitusnakyma( { navigation } ) {
   const haeSijainnit = () => {
     db.transaction(
       (tx) => {
-        tx.executeSql(`SELECT * FROM OMATSIJAINNIT`, [], 
+        tx.executeSql(`SELECT * FROM TALLENNETUTSIJAINNIT`, [], 
           (_tx, rs) => {
 
             setSijainnit(rs.rows._array);
@@ -85,7 +86,7 @@ export default function Aloitusnakyma( { navigation } ) {
             // Muutetaan data tallennettavaan muotoon ennen tallentamista (string)
             let tallenneJson = uusiSijaintiDialogi.uusiSijainti;
             let tallenneString = JSON.stringify(tallenneJson);
-            tx.executeSql(`INSERT INTO OMATSIJAINNIT (sijainti) VALUES (?)`, [tallenneString], 
+            tx.executeSql(`INSERT INTO TALLENNETUTSIJAINNIT (tiedot) VALUES (?)`, [tallenneString], 
             (_tx, rs) => {
                 haeSijainnit();
             }
@@ -144,27 +145,31 @@ export default function Aloitusnakyma( { navigation } ) {
       
     <Text>{text}</Text>
 
+      
     {(sijainnit.length > 0)
-
-
     ? sijainnit.map((sijainti, idx) => {
 
-      let sijaintiObj = JSON.parse(sijainti.sijainti);
-      let d = new Date(sijaintiObj.aikaleima);
-      let paivamaara = d.toString();
+      //console.log(sijainti);
 
-      console.log(sijaintiObj);
+      // Apumuuttujat
+      let id = JSON.parse(sijainti.id); // objekti
+      let tiedot = JSON.parse(sijainti.tiedot); // objekti
+      let kuva = JSON.parse(sijainti.kuva); // objekti
+
+      let d = new Date(tiedot.aikaleima);
+      let paivamaara = d.toString();
 
       return(
       <List.Item
       onPress={ () => navigation.navigate("Sijainnin tiedot", 
-      {
-        id : idx,
-        tiedot : sijaintiObj
+      { // Viedään tiedot --> "SijainninTiedot"
+        id : id,
+        tiedot : tiedot,
+        kuvatiedostot : kuva
       }
       )}
-      key={sijainti.id}
-      title={sijaintiObj.teksti}
+      key={idx}
+      title={tiedot.teksti}
       description={paivamaara}
       left={props => <List.Icon {...props} icon="map-marker" />}
       right={props =>
@@ -215,8 +220,7 @@ export default function Aloitusnakyma( { navigation } ) {
                 lat : location.coords.latitude,
                 lon : location.coords.longitude,
                 aikaleima : location.timestamp,
-                teksti: teksti,
-                kuvat : []
+                teksti: teksti
             }
           })}}
             />
