@@ -3,7 +3,7 @@ import { Camera } from "expo-camera";
 import { StyleSheet, Image } from 'react-native';
 
 // React Native Paper
-import { Provider as PaperProvider, Text, FAB, Card, Portal, Dialog, TextInput, Button } from 'react-native-paper';
+import { Provider as PaperProvider, Text, FAB, Card, Portal, Dialog, TextInput, Button, Paragraph } from 'react-native-paper';
 
 // SQLite tietokannan lukemista varten
 import * as SQLite from 'expo-sqlite';
@@ -20,7 +20,14 @@ export default function SijainninTiedot ( {route, navigation } ) {
   const [virhe, setVirhe] = useState(null);
   const [kameranRef, setKameranRef] = useState(null);
 
-  const [kuvat, setKuvat] = useState([]); // Ei käytössä
+  // Dialogi ikkuna
+  const [uusiKuvaDialogi, setUusiKuvaDialogi] = useState({
+    nayta : false,
+    kuvanTiedot : [],
+    teksti : ""
+});
+
+  const [kuvat, setKuvat] = useState([]); 
 
   const edellinen = () => {
     if (idx != 0) {
@@ -38,24 +45,27 @@ export default function SijainninTiedot ( {route, navigation } ) {
 
   
   // TIETOKANNAN HALLINTA - muokataan sijaintitietoa tietokannassa
-  const muokkaaSijainninTiedot = (kuvanTiedot) => {
+  const lisaaKuva = () => {
+
+    setUusiKuvaDialogi({ nayta : false, kuvanTiedot : "", teksti : ""});
 
     db.transaction(
         (tx) => {
             // Muutetaan data stringiksi ennen tallentamista
-            let tallenneJson = kuvanTiedot.uri;
+            let tallenneJson = uusiKuvaDialogi.kuvanTiedot.uri;
             let tallenneString = JSON.stringify(tallenneJson);
            
-            tx.executeSql(`UPDATE TALLENNETUTSIJAINNIT SET kuva = ${tallenneString} WHERE id = ${id}`, 
+            tx.executeSql(`UPDATE TALLENNETUTSIJAINNIT SET kuva = ${tallenneString} WHERE id = ?`, [id]);
             (_tx, rs) => {
                 console.log(_tx);
             }
-            )
+            
         }, 
         (err) => {
             console.log(err);
         });
   }
+
 
 
   // --- Kameratoiminnot ---
@@ -82,8 +92,9 @@ export default function SijainninTiedot ( {route, navigation } ) {
     if (kameranRef) {
 
       const kuvanTiedot = await kameranRef.takePictureAsync();
+
       setKuvaustila(false);   
-      muokkaaSijainninTiedot(kuvanTiedot); 
+      setUusiKuvaDialogi({ nayta : true, kuvanTiedot : kuvanTiedot, teksti : "" });
     }
   }
 
@@ -119,48 +130,69 @@ export default function SijainninTiedot ( {route, navigation } ) {
 
       // Jos kuvaustila ei ole päällä
       :<PaperProvider>
-          <Text>{JSON.stringify(id)}</Text>
-          <Text>{JSON.stringify(tiedot)}</Text>
-          <Text>{JSON.stringify(kuvatiedostot)}</Text>
-
+        <Card style={styles.kortti}>
+          <Card.Title title={tiedot.teksti}></Card.Title>
+          
+          <Card.Content>
+          <Paragraph>Leveysaste: {tiedot.lat}</Paragraph>
+          <Paragraph>Pituusaste: {tiedot.lon}</Paragraph>
+        
           <FAB
           icon="camera-plus"
           label="Ota kuva sijainnista"
           style={styles.iconCamera}
           onPress={kaynnistaKamera}
           />
-
-    
-      <Text>{virhe}</Text>
-
-      {(!kuvat) // Näytetään kuvat tässä (Jos kuvia löytyy tilamuuttujasta)
-      ?<Card style={styles.kortti}>
-        <Card.Content>
-        <Image
-          style={styles.kuva}
-          source={{ uri : kuvat[idx].kuvanUri }}
-        /> 
-        <Title>{kuvat[idx].teksti}</Title>
-        <Card.Actions style={styles.kortti}>
+          {(virhe) // Jos kameratoimintoa ei voida ottaa käyttöön
+          ? <Text>{virhe}</Text> 
+          : null
+          }
+          
+          {(kuvatiedostot) // Jos kuvatiedostoja löytyy
+          ?<Card.Content>
+            <Image
+            style={styles.kuva}
+            source={{ uri : kuvatiedostot }}
+            />
               <FAB 
-              style={styles.navi}
+              style={styles.naviEdellinen}
               mode="contained"
               icon="chevron-left"
               onPress={edellinen}
               />
               <FAB
-              style={styles.navi}
+              style={styles.naviSeuraava}
               mode="contained"
               icon="chevron-right"
               onPress={seuraava}
               />
-        </Card.Actions>
-        </Card.Content>
-      </Card>
+            </Card.Content>
+          : null
+          }
+          </Card.Content>     
+        </Card>
 
-      // Jos kuvaa ei ole määritelty niin null
-      : null
-      }
+        <Portal>
+          <Dialog visible={uusiKuvaDialogi.nayta} onDismiss={() => { setUusiKuvaDialogi({ nayta : false, kuvanUri : kuvanTiedot.uri, teksti : ""})}}>
+            <Dialog.Title>Tallenna kuvan tiedot:</Dialog.Title>
+            <Dialog.Content>
+              <TextInput
+                label="Anna kuvan nimi..."
+                mode="outlined"
+                placeholder="Kuva..."
+                onChangeText={ (teksti) => { setUusiKuvaDialogi( {...uusiKuvaDialogi, teksti: teksti} ) } }
+                />
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button 
+              mode="contained"
+              onPress={() => {
+                lisaaKuva();
+              }}
+              >Tallenna</Button>
+            </Dialog.Actions>
+          </Dialog>
+        </Portal>
 
       </PaperProvider>
     )
@@ -188,7 +220,7 @@ export default function SijainninTiedot ( {route, navigation } ) {
       position: 'absolute',
       margin: 20,
       bottom: 0,
-      left: 0
+      left: 0,
     },
     kameranakyma : {
       flex: 1,
@@ -196,8 +228,8 @@ export default function SijainninTiedot ( {route, navigation } ) {
       justifyContent: 'center', 
     },
     kuva : {
-      width: 300, 
-      height: 400, 
+      width: 225, 
+      height: 300, 
       resizeMode: 'stretch',
     },
     iconDelete : {
@@ -206,9 +238,9 @@ export default function SijainninTiedot ( {route, navigation } ) {
       padding : 2
     },
     iconCamera : {
-      marginLeft : 20,
       marginBottom : 30,
-      padding : 2
+      padding : 2,
+      marginTop : 25
     },
     appbar : {
       marginTop: 50
@@ -218,9 +250,17 @@ export default function SijainninTiedot ( {route, navigation } ) {
       alignItems: 'center',
       justifyContent: 'center', 
     },
-    navi : {
-      padding : 2,
-      margin : 25
-    }
+    naviEdellinen: {
+      position: 'absolute',
+      margin: 10,
+      bottom: -100,
+      left: 0
+    },
+    naviSeuraava: {
+      position: 'absolute',
+      margin: 10,
+      bottom: -100,
+      right: 0
+    },
    
   });
