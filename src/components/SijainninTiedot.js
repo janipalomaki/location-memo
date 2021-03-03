@@ -10,6 +10,14 @@ import * as SQLite from 'expo-sqlite';
 const db = SQLite.openDatabase("sijaintitietokanta.db"); // Luodaan tietokantayhteys
 
 
+/*
+NÄMÄ KESKEN:
+- USEAMMAN KUVAN TALLENNUSMAHDOLLISUUS
+- PÄIVITYS UUTEEN KUVAAN HETI KUN KUVA ON OTETTU
+- KUVAN NAVI NAPPULAT TOIMIMAAN OIKEIN
+*/
+
+
 export default function SijainninTiedot ( {route, navigation } ) {
 
   const { id, tiedot, kuvatiedostot } = route.params; // Sijainnin tiedot aloitusnäkymästä (tiedot sijaintietokannasta)
