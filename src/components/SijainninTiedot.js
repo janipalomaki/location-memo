@@ -185,7 +185,7 @@ export default function SijainninTiedot ( {route, navigation } ) {
             <Dialog.Title>Tallenna kuvan tiedot:</Dialog.Title>
             <Dialog.Content>
               <TextInput
-                label="Anna kuvan nimi..."
+                label="Kuvan nimi..."
                 mode="outlined"
                 placeholder="Kuva..."
                 onChangeText={ (teksti) => { setUusiKuvaDialogi( {...uusiKuvaDialogi, teksti: teksti} ) } }
