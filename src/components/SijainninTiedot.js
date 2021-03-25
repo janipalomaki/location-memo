@@ -14,7 +14,6 @@ const db = SQLite.openDatabase("sijaintitietokanta.db"); // Luodaan tietokantayh
 NÄMÄ KESKEN:
 - USEAMMAN KUVAN TALLENNUSMAHDOLLISUUS
 - PÄIVITYS UUTEEN KUVAAN HETI KUN KUVA ON OTETTU
-- KUVAN NAVI NAPPULAT TOIMIMAAN OIKEIN
 */
 
 
@@ -37,6 +36,9 @@ export default function SijainninTiedot ( {route, navigation } ) {
 
   const [kuvat, setKuvat] = useState([]); 
 
+  // Edellinen ja seuraava nappulat
+  const [idx, setIdx] = useState(Number(0));
+
   const edellinen = () => {
     if (idx != 0) {
       setIdx(idx - 1);
@@ -53,6 +55,8 @@ export default function SijainninTiedot ( {route, navigation } ) {
 
   
   // TIETOKANNAN HALLINTA - muokataan sijaintitietoa tietokannassa
+
+
   const lisaaKuva = () => {
 
     setUusiKuvaDialogi({ nayta : false, kuvanTiedot : "", teksti : ""});
@@ -107,11 +111,7 @@ export default function SijainninTiedot ( {route, navigation } ) {
   }
 
 
-
     return (
-
-
-
       (kuvaustila) // Jos kuvaustila päällä
     ?<Camera style={styles.kameranakyma} ref={ (r) => { setKameranRef(r) }}>
       <Text style={{color: "#fff"}}>{kuvaustilaInfo}</Text>
