@@ -1,20 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Camera } from "expo-camera";
 import { StyleSheet, Image } from 'react-native';
 
 // React Native Paper
-import { Provider as PaperProvider, Text, FAB, Card, Portal, Dialog, TextInput, Button, Paragraph } from 'react-native-paper';
+import { Provider as PaperProvider, Text, FAB, Card, Portal, Dialog, Button, Paragraph } from 'react-native-paper';
 
 // SQLite tietokannan lukemista varten
 import * as SQLite from 'expo-sqlite';
 const db = SQLite.openDatabase("sijaintitietokanta.db"); // Luodaan tietokantayhteys
-
-
-/*
-NÄMÄ KESKEN:
-- USEAMMAN KUVAN TALLENNUSMAHDOLLISUUS
-- PÄIVITYS UUTEEN KUVAAN HETI KUN KUVA ON OTETTU
-*/
 
 
 export default function SijainninTiedot ( {route, navigation } ) {
@@ -54,8 +47,6 @@ export default function SijainninTiedot ( {route, navigation } ) {
             console.log(err);
         });
   }
-
-
 
   // --- Kameratoiminnot ---
   const kaynnistaKamera = async () => {
