@@ -30,36 +30,13 @@ export default function SijainninTiedot ( {route, navigation } ) {
   // Dialogi ikkuna
   const [uusiKuvaDialogi, setUusiKuvaDialogi] = useState({
     nayta : false,
-    kuvanTiedot : [],
-    teksti : ""
+    kuvanTiedot : []
 });
-
-  const [kuvat, setKuvat] = useState([]); 
-
-  // Edellinen ja seuraava nappulat
-  const [idx, setIdx] = useState(Number(0));
-
-  const edellinen = () => {
-    if (idx != 0) {
-      setIdx(idx - 1);
-    }
-  }
-
-  const seuraava = () => {
-    let ylaraja = Number(kuvat.length) - 1;
-
-    if (idx != ylaraja){
-      setIdx(idx + 1);
-    }
-  }
-
   
   // TIETOKANNAN HALLINTA - muokataan sijaintitietoa tietokannassa
-
-
   const lisaaKuva = () => {
 
-    setUusiKuvaDialogi({ nayta : false, kuvanTiedot : "", teksti : ""});
+    setUusiKuvaDialogi({ nayta : false, kuvanTiedot : ""});
 
     db.transaction(
         (tx) => {
@@ -106,7 +83,7 @@ export default function SijainninTiedot ( {route, navigation } ) {
       const kuvanTiedot = await kameranRef.takePictureAsync();
 
       setKuvaustila(false);   
-      setUusiKuvaDialogi({ nayta : true, kuvanTiedot : kuvanTiedot, teksti : "" });
+      setUusiKuvaDialogi({ nayta : true, kuvanTiedot : kuvanTiedot});
     }
   }
 
@@ -162,18 +139,6 @@ export default function SijainninTiedot ( {route, navigation } ) {
             style={styles.kuva}
             source={{ uri : kuvatiedostot }}
             />
-              <FAB 
-              style={styles.naviEdellinen}
-              mode="contained"
-              icon="chevron-left"
-              onPress={edellinen}
-              />
-              <FAB
-              style={styles.naviSeuraava}
-              mode="contained"
-              icon="chevron-right"
-              onPress={seuraava}
-              />
             </Card.Content>
           : null
           }
@@ -181,27 +146,27 @@ export default function SijainninTiedot ( {route, navigation } ) {
         </Card>
 
         <Portal>
-          <Dialog visible={uusiKuvaDialogi.nayta} onDismiss={() => { setUusiKuvaDialogi({ nayta : false, kuvanUri : kuvanTiedot.uri, teksti : ""})}}>
-            <Dialog.Title>Tallenna kuvan tiedot:</Dialog.Title>
-            <Dialog.Content>
-              <TextInput
-                label="Kuvan nimi..."
-                mode="outlined"
-                placeholder="Kuva..."
-                onChangeText={ (teksti) => { setUusiKuvaDialogi( {...uusiKuvaDialogi, teksti: teksti} ) } }
-                />
-            </Dialog.Content>
+          <Dialog visible={uusiKuvaDialogi.nayta} onDismiss={() => { setUusiKuvaDialogi({ nayta : false, kuvanUri : kuvanTiedot.uri})}}>
+            <Dialog.Title>Tallenna kuva</Dialog.Title>
             <Dialog.Actions>
+            <Button 
+              style={styles.peruuta}
+              mode="contained"
+              onPress={() => {
+                setUusiKuvaDialogi(false)
+              }}
+              >Peruuta</Button>
               <Button 
+              style={styles.ok}
               mode="contained"
               onPress={() => {
                 lisaaKuva();
+                navigation.navigate("Aloitusnäkymä")
               }}
-              >Tallenna</Button>
+              >OK</Button>
             </Dialog.Actions>
           </Dialog>
         </Portal>
-
       </PaperProvider>
     )
   }
@@ -258,17 +223,12 @@ export default function SijainninTiedot ( {route, navigation } ) {
       alignItems: 'center',
       justifyContent: 'center', 
     },
-    naviEdellinen: {
-      position: 'absolute',
-      margin: 10,
-      bottom: -100,
-      left: 0
+    peruuta : {
+      marginRight : 25,
+      padding : 7,
     },
-    naviSeuraava: {
-      position: 'absolute',
-      margin: 10,
-      bottom: -100,
-      right: 0
-    },
+    ok : {
+      padding : 7,
+    }
    
   });

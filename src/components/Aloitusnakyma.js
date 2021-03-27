@@ -42,6 +42,7 @@ export default function Aloitusnakyma( { navigation } ) {
                                                         uusiSijainti : []
                                                         })
 
+
 // TIETOKANNAN HALLINTA
 
   // Tyhjennetään tietokannan taulu
@@ -130,7 +131,7 @@ export default function Aloitusnakyma( { navigation } ) {
       setLocation(location);
 
     })();
-  }, []);
+  }, [sijainnit]);
 
 
   let text = 'Haetaan sijaintitietoja..';
@@ -149,7 +150,7 @@ export default function Aloitusnakyma( { navigation } ) {
     {(sijainnit.length > 0)
     ? sijainnit.map((sijainti, idx) => {
 
-      console.log(sijainti);
+      //console.log(sijainti);
 
       let id = JSON.parse(sijainti.id);
       let tiedot = JSON.parse(sijainti.tiedot);
